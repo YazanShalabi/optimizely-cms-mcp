@@ -2,17 +2,30 @@
 
 A Model Context Protocol (MCP) server for Optimizely CMS, providing AI assistants with comprehensive access to Optimizely's GraphQL API and Content Management API.
 
+## Version
+
+**Current Version**: 2.0.0-beta
+**Status**: Beta / Pre-Release
+
+This is an active development version and is **not yet a release candidate**. Features are subject to change, and additional testing is required before production use.
+
 ## Features
 
-- **GraphQL Integration**: Query content using Optimizely Graph API with multiple authentication methods
-- **Content Management**: Full CRUD operations via Content Management API (Preview3/Experimental)
-- **Intelligent Content Creation**: Automatically handles null values and finds parent pages by name
-- **Version Management**: Create, publish, and manage content versions
-- **Content Types**: Explore and understand content type schemas
-- **Workflow Support**: Manage content approval workflows
-- **Multi-language Support**: Handle content in multiple languages
-- **Caching**: Built-in caching for improved performance
+### Core Capabilities
+- **Discovery-First Architecture**: Zero hardcoded assumptions about content types or fields
+- **Dynamic Schema Introspection**: Discovers available content types and fields at runtime
+- **Unified Content Retrieval**: Get any content by URL, key, GUID, or search term in one call
+- **Visual Builder Support**: Full support for Optimizely Visual Builder pages with composition structure
+- **Content Management**: Create and manage content via interactive wizard
+- **Intelligent Field Mapping**: Pattern-based field matching with confidence scoring
+- **GraphQL & CMA Integration**: Direct access to both Graph API (read) and Content Management API (write)
+- **Smart Caching**: Built-in caching for improved performance
 - **Type Safety**: Full TypeScript support with runtime validation
+
+### API Support
+- **Graph API**: Fast content retrieval, search, and discovery
+- **Content Management API**: Content creation, updates, and draft access
+- **Dual Authentication**: Supports both Graph (single key, HMAC) and CMA (OAuth2) authentication
 
 ## Installation
 
@@ -193,73 +206,239 @@ For other MCP-compatible clients, use the stdio transport configuration:
 }
 ```
 
-## Available Tools (38 Total)
+## Available Tools (14 Total)
 
-### Utility Tools (3)
-- `test_connection` - Test connectivity to Optimizely APIs
-- `health_check` - Check server health status
-- `get_config` - Get current configuration (sanitized)
+### 🌟 Core Discovery & Retrieval Tools
 
-### GraphQL Query Tools (10)
-- `graph_search` - Full-text content search
-- `graph_autocomplete` - Get autocomplete suggestions
-- `graph_facet_search` - Search with faceted filtering
-- `graph_get_by_id` - Get content by numeric ID
-- `graph_get_by_guid` - Get content by GUID
-- `graph_get_children` - Get child content items
-- `graph_get_ancestors` - Get ancestor hierarchy
-- `graph_get_descendants` - Get all descendants
-- `graph_get_by_route` - Get content by route segment
-- `graph_get_by_url` - Get content by full URL
+These tools use the Graph API to dynamically discover your CMS structure and retrieve content without hardcoded assumptions.
 
-### Content Management Tools (17)
+1. **`help`** - 🚀 START HERE! Get context-aware help and learn the discovery-first workflow
+   - Examples: `help({})`, `help({"topic": "workflow"})`
 
-#### Content CRUD (7)
-- `content_create` - Create new content
-- `content_get` - Get content by ID
-- `content_update` - Update existing content
-- `content_patch` - Apply JSON Patch operations
-- `content_delete` - Delete content
-- `content_move` - Move content to new location
-- `content_copy` - Copy content
+2. **`get`** - 🎯 UNIFIED TOOL - Get content by ANY identifier in ONE call
+   - Replaces the old `search` → `locate` → `retrieve` workflow
+   - Auto-discovers fields and returns complete content
+   - **✅ Supports Visual Builder pages with full composition structure**
+   - Examples: `get({"identifier": "/"})`, `get({"identifier": "Article 4"})`
 
-#### Version Management (5)
-- `version_list` - List all content versions
-- `version_get` - Get specific version
-- `version_create` - Create new version
-- `version_publish` - Publish a version
-- `version_set_common_draft` - Set as common draft
+3. **`discover`** - Find content types and fields dynamically
+   - No hardcoded assumptions about your CMS structure
+   - Examples: `discover({"target": "types"})`, `discover({"target": "fields", "contentType": "ArticlePage"})`
 
-#### Content Types (3)
-- `type_list` - List available content types
-- `type_get` - Get content type details
-- `type_get_schema` - Get JSON schema for type
+4. **`analyze`** - Deep analysis of content type requirements
+   - Understand fields, constraints, and defaults
+   - Example: `analyze({"contentType": "ArticlePage"})`
 
-#### Workflows (2)
-- `workflow_get` - Get workflow status
-- `workflow_transition` - Change workflow state
+5. **`search`** - Intelligent content search with auto-discovery
+   - ⚠️ Note: `get` is usually better for most use cases
+   - Example: `search({"query": "mcp", "contentTypes": ["ArticlePage"]})`
 
-### Intelligent Content Tools (4)
-These tools combine GraphQL and CMA to provide smart content creation:
+6. **`locate`** - Find specific content by ID, key, or path
+   - ⚠️ Note: `get` is usually better for most use cases
+   - Example: `locate({"identifier": "/news/article-1"})`
 
-- `content_find_by_name` - Find content by name (e.g., "Home", "News") to get IDs and GUIDs
-- `content_get_details` - Get full details including GUID for a specific content
-- `content_create_under` - Create content under a parent by name (e.g., "create under Home")
-- `content_creation_wizard` - Interactive wizard for guided content creation
+7. **`retrieve`** - Get full content from Content Management API
+   - ⚠️ Note: `get` is usually better (uses faster Graph API)
+   - Use only when `get` suggests it or you need CMA-specific data
+   - Example: `retrieve({"identifier": "12345"})`
 
-#### Smart Content Creation
-The MCP server now intelligently handles content creation when Claude sends null values:
+### 🔧 Utility Tools (3)
+- **`health-check`** - Check API connectivity and server health
+- **`get-config`** - Get current server configuration (sanitized)
+- **`get-documentation`** - Get documentation for available tools by category
 
-1. **Automatic Parent Finding**: If no parent container is provided, it searches for common parent pages (Home, Start, Root)
-2. **Content Type Mapping**: Maps human-readable types like "article page" to actual types like "ArticlePage"
-3. **Graceful Fallbacks**: Falls back to "StandardPage" if the requested content type doesn't exist
+### 🔧 Content Management Tools (CMA API)
 
-#### Example: Creating content under "Home"
-Instead of needing to know the Home page's GUID, you can now:
-1. Use `content_find_by_name` with "Home" to find the page
-2. Use `content_create_under` to create content directly under it
-3. Or use `content_creation_wizard` for a step-by-step process
-4. Even `content-create` now automatically handles null values intelligently!
+These tools use the Content Management API for write operations and detailed content access:
+
+1. **`content_creation_wizard`** - Interactive content creation with discovery
+   - Essential for creating new content
+   - Example: `content_creation_wizard({"step": "start"})`
+
+2. **`content-test-api`** - Test CMA connectivity and endpoints
+   - Validates authentication and permissions
+   - Example: `content-test-api({})`
+
+Note: The `retrieve` tool (listed in Core Tools above) also uses CMA for accessing draft content and version history.
+
+### ⚠️ Deprecated Tools (Being Removed)
+
+These Graph API discovery tools are duplicates of the new `discover` tool and will be removed in a future version:
+
+- `graph-introspection` - Use `discover` instead
+- `type-discover` - Use `discover({"target": "types"})` instead
+- `type-match` - Use `discover` instead
+- `content_type_analyzer` - Use `analyze` instead
+- `graph_discover_types` - Use `discover({"target": "types"})` instead
+- `graph_discover_fields` - Use `discover({"target": "fields"})` instead
+- `graph-query` - Use `get` or `search` instead
+
+## Key Architecture Principles
+
+### Discovery-First Design
+Unlike traditional integrations that hardcode content types and field names, this MCP server:
+- **Never hardcodes content types** - No assumptions about "ArticlePage", "StandardPage", etc.
+- **Never hardcodes field mappings** - No predefined paths like "SeoSettings.MetaTitle"
+- **Discovers everything dynamically** - Uses introspection to understand your CMS
+- **Adapts to any CMS configuration** - Works with custom content types and fields
+
+### Intelligent Field Mapping
+The server uses pattern matching and similarity scoring to:
+- Map user-friendly field names to actual CMS fields
+- Handle nested properties automatically
+- Generate appropriate default values based on field types
+- Provide confidence scores for mappings
+
+### Recommended Workflows
+
+#### Simple Content Retrieval (Most Common)
+```
+1. get({"identifier": "homepage"})  # That's it! One call gets everything.
+```
+
+The `get` tool automatically:
+- Detects identifier type (search term, URL, key, or GUID)
+- Finds the content
+- Discovers all available fields
+- Returns complete content including Visual Builder composition
+
+#### Advanced Discovery Workflow
+```
+1. help({})                                              # Learn the workflow
+2. discover({"target": "types"})                         # Find content types
+3. discover({"target": "fields", "contentType": "..."}) # Get fields
+4. get({"identifier": "..."})                           # Retrieve content
+```
+
+#### Content Creation Workflow
+```
+1. discover({"target": "types"})              # Find available types
+2. analyze({"contentType": "ArticlePage"})    # Understand requirements
+3. content_creation_wizard({...})             # Create with guidance
+```
+
+## Visual Builder Support
+
+The `get` tool fully supports Optimizely Visual Builder (formerly known as Visual Experience Composer) pages:
+
+### Features
+- ✅ **Automatic Detection** - Recognizes Visual Builder pages by interface (`_IExperience`)
+- ✅ **Complete Composition Retrieval** - Returns full structure in a single call
+- ✅ **Nested Structure** - Handles grids, rows, columns, and components
+- ✅ **Component Content** - Includes inline component data directly in composition
+- ✅ **Recursive Depth** - Supports any level of nesting
+
+### Understanding Component Types
+
+Visual Builder components come in two types:
+
+#### 1. Inline Components (Embedded Content)
+- **Key**: `null` or not present
+- **Content Location**: Stored directly in the composition structure
+- **Access**: Content is already included in the `get` response
+- **Example**: Text components with content like "Welcome to our site"
+
+```json
+{
+  "component": {
+    "_metadata": {
+      "types": ["Text", "_Component"],
+      "key": null  // ← NULL = inline
+    },
+    "Content": "Welcome Text"  // ← Content is here
+  }
+}
+```
+
+**Important**: Do NOT try to retrieve inline components separately - the content is already provided!
+
+#### 2. Referenced Components (Separate Content Items)
+- **Key**: Valid GUID (e.g., "f7e7f5c9-1e77-4884-a8fc-a9c9ae56560c")
+- **Content Location**: Stored as separate content items in CMS
+- **Access**: Use `get({"identifier": "component-key"})` to retrieve full details
+- **Example**: Shared components like Site Settings, reusable blocks
+
+```json
+{
+  "component": {
+    "_metadata": {
+      "types": ["ArticleList", "_Component"],
+      "key": "f7e7f5c91e774884a8fca9c9ae56560c"  // ← Has key
+    }
+    // May include basic fields, use get() for full content
+  }
+}
+```
+
+### Best Practices
+
+**When working with Visual Builder pages:**
+
+1. **First**, retrieve the page with `get({"identifier": "/"})`
+2. **Inspect** the composition structure for components
+3. **For inline components** (null key): Content is already in the response ✅
+4. **For referenced components** (has key): Use `get({"identifier": "key"})` to fetch full details
+
+### Example Usage
+```javascript
+// Get a Visual Builder homepage
+get({"identifier": "/"})
+
+// Returns complete structure with inline content:
+{
+  "content": {
+    "_metadata": { ... },
+    "composition": {
+      "nodes": [
+        {
+          "key": "grid-id",
+          "displayName": "Welcome Section",
+          "nodes": [
+            {
+              "component": {
+                "_metadata": {
+                  "types": ["Text"],
+                  "key": null  // Inline - content included
+                },
+                "Content": "Welcome to our site"
+              }
+            },
+            {
+              "component": {
+                "_metadata": {
+                  "types": ["ArticleList"],
+                  "key": "f7e7f5c9..."  // Referenced - fetch separately
+                }
+              }
+            }
+          ]
+        }
+      ]
+    }
+  }
+}
+```
+
+### Known Limitations
+- **Performance** - Large compositions may take longer to retrieve due to nested structure
+- **Referenced Component Details** - Basic metadata only; full content requires separate `get()` call
+- **Display Settings** - Not included in current implementation (can be added if needed)
+
+## Important Notes
+
+### Content Indexing Delay
+After creating new content using the `content_creation_wizard` or other creation tools:
+- **Immediate availability in CMA**: Content is immediately available via `retrieve` tool
+- **Graph API indexing delay**: Content may take 1-5 minutes to appear in Graph API results
+- **Tool behavior**: The `get` and `search` tools use Graph API and will return "not found" for newly created content until indexing completes
+
+**Best practice**: After creating content, wait a few minutes before attempting to retrieve it with `get` or `search`. Alternatively, use the `retrieve` tool which queries the CMA directly and has no indexing delay.
+
+### Draft vs Published Content
+- **Graph API**: Only returns published content
+- **CMA API**: Returns both draft and published content
+- **New content**: Created in draft status by default
+- To make content searchable via `get`/`search`, it must be published first
 
 ## Development
 
@@ -340,24 +519,6 @@ npm run debug:graph
 # Validate API key format
 npm run validate:key
 ```
-
-### Debugging Scripts
-
-The `scripts/` directory contains utilities for testing and debugging:
-
-- **`quick-test.js`** - Test MCP server tools through stdio
-- **`test-with-debug.js`** - Detailed API request/response logging
-- **`debug-graph.js`** - Direct GraphQL endpoint testing
-- **`debug-auth-comprehensive.js`** - Test all authentication methods
-- **`validate-key.js`** - Validate GraphQL key format
-- **`find-graphql-endpoint.js`** - Discover your GraphQL endpoint
-
-For PowerShell users, set environment variables like this:
-```powershell
-$env:LOG_LEVEL="debug"; npm run test:tools:debug
-```
-
-See [scripts/TESTING_SCRIPTS.md](scripts/TESTING_SCRIPTS.md) for detailed documentation.
 
 ## Troubleshooting
 

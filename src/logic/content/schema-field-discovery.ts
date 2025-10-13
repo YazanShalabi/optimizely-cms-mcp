@@ -345,7 +345,12 @@ export class SchemaFieldDiscovery {
         ? discovery.suggestions.find(s => s.userField === userField)
         : undefined;
       if (suggestion && suggestion.confidence !== 'low') {
-        mappedProperties[suggestion.suggestedField] = value;
+        // Handle nested field mappings (e.g., Settings.Title)
+        if (suggestion.suggestedField.includes('.')) {
+          this.setNestedField(mappedProperties, suggestion.suggestedField, value);
+        } else {
+          mappedProperties[suggestion.suggestedField] = value;
+        }
         logger.info(`Mapped field "${userField}" to "${suggestion.suggestedField}" (${suggestion.reason})`);
       } else {
         // No good mapping found
@@ -360,6 +365,24 @@ export class SchemaFieldDiscovery {
       unmappedFields,
       mappingSuggestions: discovery.suggestions
     };
+  }
+  
+  /**
+   * Set a nested field value using dot notation
+   */
+  private setNestedField(obj: Record<string, any>, path: string, value: any): void {
+    const keys = path.split('.');
+    const lastKey = keys.pop()!;
+    
+    let current = obj;
+    for (const key of keys) {
+      if (!current[key]) {
+        current[key] = {};
+      }
+      current = current[key];
+    }
+    
+    current[lastKey] = value;
   }
 
   /**

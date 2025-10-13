@@ -12,6 +12,16 @@ import { getIntelligentTools, registerIntelligentHandlers } from './tools/intell
 import { getHelperTools } from './tools/helper/register.js';
 import { executeGetFullContentByPath } from './tools/helper/get-full-content.js';
 
+// Import new tools
+import { ToolRegistry } from './tools/tool-registry.js';
+import { HelpTool } from './tools/implementations/help-tool.js';
+import { DiscoverTool } from './tools/implementations/discover-tool.js';
+import { AnalyzeTool } from './tools/implementations/analyze-tool.js';
+import { SearchTool } from './tools/implementations/search-tool.js';
+import { LocateTool } from './tools/implementations/locate-tool.js';
+import { RetrieveTool } from './tools/implementations/retrieve-tool.js';
+import { GetTool } from './tools/implementations/get-tool.js';
+
 export async function registerAllTools(server: Server, config: Config): Promise<void> {
   const logger = getLogger();
   const cache = getCacheManager();
@@ -51,7 +61,7 @@ export async function registerAllTools(server: Server, config: Config): Promise<
         properties: {
           category: {
             type: 'string',
-            enum: ['graph', 'content', 'assets', 'types', 'workflow', 'composite', 'utility', 'intelligent'],
+            enum: ['graph', 'content', 'assets', 'types', 'workflow', 'composite', 'utility', 'intelligent', 'helper'],
             description: 'Tool category to filter documentation'
           }
         },
@@ -60,8 +70,24 @@ export async function registerAllTools(server: Server, config: Config): Promise<
     }
   ];
 
-  // Combine all tools
+  // Register new tools using ToolRegistry
+  const toolRegistry = new ToolRegistry(config);
+
+  // Register new tools FIRST (they should be preferred)
+  toolRegistry.register(new HelpTool());
+  toolRegistry.register(new GetTool());  // 🚀 NEW UNIFIED TOOL - Use this first!
+  toolRegistry.register(new DiscoverTool());
+  toolRegistry.register(new AnalyzeTool());
+  toolRegistry.register(new SearchTool());
+  toolRegistry.register(new LocateTool());
+  toolRegistry.register(new RetrieveTool());
+  
+  // Get new tool definitions
+  const newTools = toolRegistry.getTools();
+  
+  // Combine all tools - new tools first!
   const tools: Tool[] = [
+    ...newTools,  // New tools at the beginning
     ...utilityTools,
     ...getGraphTools(),
     ...getContentTools(),
@@ -119,7 +145,12 @@ export async function registerAllTools(server: Server, config: Config): Promise<
     logger.debug(`Tool ${name} called`, { args });
 
     try {
-      // Check if we have a handler for this tool
+      // Check new tools first (they use the ToolRegistry)
+      if (toolRegistry.hasHandler(name)) {
+        return await toolRegistry.handleToolCall(name, args || {}, context);
+      }
+      
+      // Check if we have a handler for legacy tools
       const handler = handlers.get(name);
       if (handler) {
         return await handler(args || {}, context);
@@ -223,55 +254,46 @@ async function handleGetDocumentation(params: { category?: string }, context: To
       workflow: 'Workflow management',
       composite: 'Complex multi-step operations',
       utility: 'Helper and utility tools',
-      intelligent: 'Smart content creation with parent discovery'
+      intelligent: 'Smart content creation with parent discovery',
+      helper: 'Helper tools for content operations'
     }
   };
 
   // Get all available tools grouped by category
   const toolsByCategory: Record<string, string[]> = {
+    // NEW TOOLS (Recommended - use these first!)
+    'discovery-first': [
+      'help',      // 🚀 START HERE - Learn the discovery-first workflow
+      'get',       // 🌟 NEW! Get content by ANY identifier in ONE call
+      'discover',  // Find content types and fields dynamically
+      'analyze',   // Deep analysis of content types
+      'search',    // ⚠️ Prefer 'get' - Intelligent content search
+      'locate',    // ⚠️ Prefer 'get' - Find content by ID/path
+      'retrieve'   // ⚠️ Prefer 'get' - Get full content details
+    ],
     utility: ['health-check', 'get-config', 'get-documentation'],
+    // LEGACY TOOLS (Being phased out - use new tools above)
     graph: [
-      'graph-query',
-      'graph-introspection',
-      'graph-search',
-      'graph-autocomplete',
-      'graph-faceted-search',
-      'graph-get-content',
-      'graph-get-content-by-path',
-      'graph-get-children',
-      'graph-get-ancestors',
-      'graph-get-related'
+      'graph-query',         // ⚠️ Use 'search' instead
+      'graph-introspection'  // ⚠️ Use 'discover' instead
     ],
     content: [
-      'content-create',
-      'content-get',
-      'content-update',
-      'content-patch',
-      'content-delete',
-      'content-move',
-      'content-copy',
-      'content-list-versions',
-      'content-create-version',
-      'content-promote-version',
-      'content-list-languages',
-      'content-create-language-branch'
+      'content-test-api',
+      'type-discover',       // ⚠️ Use 'discover' instead
+      'type-match',          // ⚠️ Use 'discover' instead
+      'content_type_analyzer' // ⚠️ Use 'analyze' instead
     ],
-    assets: [],  // Will be added in Phase 4
-    types: [
-      'type-list',
-      'type-get',
-      'type-get-schema'
-    ],
-    workflow: [
-      'workflow-get-status',
-      'workflow-transition'
-    ],
-    composite: [], // Will be added in Phase 5
+    assets: [],  // Empty - no asset tools implemented
+    types: [],   // Empty - type tools merged into content category
+    workflow: [], // Empty - no workflow tools implemented
+    composite: [], // Empty - no composite tools implemented
     intelligent: [
-      'content_find_by_name',
-      'content_get_details', 
-      'content_create_under',
-      'content_creation_wizard'
+      'content_creation_wizard',
+      'graph_discover_types',  // ⚠️ Use 'discover' instead
+      'graph_discover_fields'  // ⚠️ Use 'discover' instead
+    ],
+    helper: [
+      'get-full-content-by-path' // ⚠️ Use 'search' + 'retrieve' instead
     ]
   };
 

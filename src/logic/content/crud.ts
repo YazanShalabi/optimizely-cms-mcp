@@ -168,7 +168,7 @@ export async function executeContentCreate(
         'Content creation requires a parent container GUID. You have several options:\n\n' +
         '1. USE THE INTELLIGENT TOOL (Recommended):\n' +
         '   Tool: content_create_under\n' +
-        '   Example: { "parentName": "Home", "contentType": "ArticlePage", "name": "my-article" }\n\n' +
+        '   Example: { "parentName": "Home", "contentType": "YourContentType", "name": "my-content" }\n\n' +
         '2. FIND THE PARENT FIRST:\n' +
         '   Step 1: Use content_find_by_name with { "name": "Home" }\n' +
         '   Step 2: Use the returned key as container\n\n' +
@@ -204,20 +204,37 @@ export async function executeContentCreate(
     const adapter = registry.getOptimizelyAdapter(config);
     const populator = new IntelligentFieldPopulator(adapter);
     
-    // Use dynamic field discovery instead of hardcoded mappings
-    const fieldDiscovery = new SchemaFieldDiscovery(config);
-    const mappingResult = await fieldDiscovery.mapFieldsDynamically(
-      contentTypeStr,
-      request.properties
+    // Check if properties are already mapped (e.g., from wizard)
+    // If the properties contain mapped fields like 'ArticleBody' or nested fields like 'SeoSettings',
+    // we should skip re-mapping to avoid overwriting the wizard's work
+    const hasNestedProperties = Object.keys(request.properties).some(key => 
+      typeof request.properties[key] === 'object' && request.properties[key] !== null
     );
-    const mappedProperties = mappingResult.mappedProperties;
+    const hasMappedFields = Object.keys(request.properties).some(key => 
+      key.includes('Body') || key === 'SeoSettings' || key.includes('Article')
+    );
     
-    // Log mapping suggestions
-    if (mappingResult.mappingSuggestions.length > 0) {
-      logger.info('Field mapping suggestions applied:', mappingResult.mappingSuggestions);
-    }
-    if (mappingResult.unmappedFields.length > 0) {
-      logger.debug('Fields without direct mapping:', mappingResult.unmappedFields);
+    let mappedProperties = request.properties;
+    
+    // Only perform field mapping if properties don't appear to be already mapped
+    if (!hasNestedProperties && !hasMappedFields) {
+      logger.debug('Properties appear unmapped, performing dynamic field discovery');
+      const fieldDiscovery = new SchemaFieldDiscovery(config);
+      const mappingResult = await fieldDiscovery.mapFieldsDynamically(
+        contentTypeStr,
+        request.properties
+      );
+      mappedProperties = mappingResult.mappedProperties;
+      
+      // Log mapping suggestions
+      if (mappingResult.mappingSuggestions.length > 0) {
+        logger.info('Field mapping suggestions applied:', mappingResult.mappingSuggestions);
+      }
+      if (mappingResult.unmappedFields.length > 0) {
+        logger.debug('Fields without direct mapping:', mappingResult.unmappedFields);
+      }
+    } else {
+      logger.debug('Properties appear to be already mapped, skipping field discovery');
     }
     
     const populationContext = {

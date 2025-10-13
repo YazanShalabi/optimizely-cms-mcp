@@ -61,15 +61,10 @@ export class SimpleQueryBuilder {
     // Build field selections if requested
     let additionalFields = '';
     if (includeFields && includeFields.length > 0) {
-      // Add type-specific fields using inline fragments
+      // Add fields using generic _IContent interface
+      // This works for any content type without hardcoding
       additionalFields = `
-            ... on ArticlePage {
-              ${this.buildFieldSelection(includeFields)}
-            }
-            ... on StandardPage {
-              ${this.buildFieldSelection(includeFields)}
-            }
-            ... on _Page {
+            ... on _IContent {
               ${this.buildFieldSelection(includeFields)}
             }`;
     }
@@ -110,7 +105,7 @@ export class SimpleQueryBuilder {
    */
   private buildFieldSelection(fields: string[]): string {
     return fields.map(field => {
-      // Handle nested fields like SeoSettings.MetaTitle
+      // Handle nested fields like ParentObject.ChildField
       if (field.includes('.')) {
         const parts = field.split('.');
         const parent = parts[0];
@@ -118,17 +113,22 @@ export class SimpleQueryBuilder {
         return `${parent} { ${children} }`;
       }
       
-      // Handle known complex fields that need subfields
-      if (field === 'Body' || field.toLowerCase().includes('richtext')) {
+      // Handle complex fields based on patterns, not hardcoded names
+      const lowerField = field.toLowerCase();
+      
+      // Rich text fields - let GraphQL handle the structure
+      if (lowerField.includes('richtext') || lowerField.includes('body') || lowerField.includes('content')) {
         return `${field}`;  // Just the field name, let GraphQL handle the error
       }
       
-      if (field === 'PromoImage' || field.toLowerCase().includes('image')) {
+      // Image/media fields - common pattern is to have URL structure
+      if (lowerField.includes('image') || lowerField.includes('media') || lowerField.includes('photo')) {
         return `${field} { url { default } }`;
       }
       
-      if (field === 'SeoSettings') {
-        return `${field} { MetaTitle MetaDescription }`;
+      // SEO-related fields - use ellipsis to discover structure
+      if (lowerField.includes('seo') || lowerField.includes('meta')) {
+        return `${field} { ... }`;
       }
       
       // Simple fields
