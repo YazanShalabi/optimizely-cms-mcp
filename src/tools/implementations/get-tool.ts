@@ -61,33 +61,33 @@ When user asks "can you get the homepage" or "find content X":
 
   protected readonly inputSchema = z.object({
     identifier: z.string().min(1).describe('Search term, URL path, content key, or GUID'),
-    identifierType: z.enum(['auto', 'search', 'path', 'key']).default('auto')
+    identifierType: z.enum(['auto', 'search', 'path', 'key']).optional()
       .describe('Type of identifier (auto-detected by default)'),
 
     // Output control
     includeFields: z.array(z.string()).optional()
       .describe('Specific fields to include (empty = all discovered fields)'),
-    includeMetadata: z.boolean().default(true)
+    includeMetadata: z.boolean().optional()
       .describe('Include content metadata'),
-    includeSchema: z.boolean().default(false)
+    includeSchema: z.boolean().optional()
       .describe('Include content type schema'),
 
     // Search options (when identifier is a search term)
-    searchLimit: z.number().min(1).max(10).default(1)
+    searchLimit: z.number().min(1).max(10).optional()
       .describe('Max results if searching (1 = return first match)'),
 
     // Locale and version
-    locale: z.string().default('en').describe('Content locale'),
+    locale: z.string().optional().describe('Content locale'),
     version: z.string().optional().describe('Specific version to retrieve'),
 
     // Block resolution
-    resolveBlocks: z.boolean().default(true)
+    resolveBlocks: z.boolean().optional()
       .describe('Resolve block/nested content references'),
-    resolveDepth: z.number().min(0).max(5).default(2)
+    resolveDepth: z.number().min(0).max(5).optional()
       .describe('Depth for resolving nested content'),
 
     // Field limits
-    maxFields: z.number().min(1).max(100).default(50)
+    maxFields: z.number().min(1).max(100).optional()
       .describe('Maximum fields to return (prevents query bloat)')
   });
 
@@ -138,6 +138,16 @@ When user asks "can you get the homepage" or "find content X":
   }
 
   protected async run(input: GetInput, context: ToolContext): Promise<GetOutput> {
+    // Set default values that were removed from the schema for compatibility
+    input.searchLimit = input.searchLimit ?? 1;
+    input.locale = input.locale ?? 'en';
+    input.resolveBlocks = input.resolveBlocks ?? true;
+    input.resolveDepth = input.resolveDepth ?? 2;
+    input.maxFields = input.maxFields ?? 50;
+    input.identifierType = input.identifierType ?? 'auto';
+    input.includeMetadata = input.includeMetadata ?? true;
+    input.includeSchema = input.includeSchema ?? false;
+
     if (!this.graphClient || !this.introspector || !this.discoveryCache || !this.cmaClient) {
       await this.initialize(context);
     }
@@ -1548,16 +1558,16 @@ query GetExperienceComposition {
 // Type definitions
 interface GetInput {
   identifier: string;
-  identifierType: 'auto' | 'search' | 'path' | 'key';
+  identifierType?: 'auto' | 'search' | 'path' | 'key';
   includeFields?: string[];
-  includeMetadata: boolean;
-  includeSchema: boolean;
-  searchLimit: number;
-  locale: string;
+  includeMetadata?: boolean;
+  includeSchema?: boolean;
+  searchLimit?: number;
+  locale?: string;
   version?: string;
-  resolveBlocks: boolean;
-  resolveDepth: number;
-  maxFields: number;
+  resolveBlocks?: boolean;
+  resolveDepth?: number;
+  maxFields?: number;
 }
 
 interface GetOutput {

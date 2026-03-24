@@ -35,13 +35,13 @@ Example: retrieve({"identifier": "12345", "includeSchema": true})`;
   
   protected readonly inputSchema = z.object({
     identifier: z.string().describe('Content ID, key, or path'),
-    locale: z.string().default('en').describe('Content locale'),
+    locale: z.string().optional().describe('Content locale'),
     version: z.string().optional().describe('Specific version to retrieve'),
-    includeSchema: z.boolean().default(false).describe('Include content type schema'),
-    includeVersions: z.boolean().default(false).describe('Include version history'),
-    includeLanguages: z.boolean().default(false).describe('Include all language versions'),
-    resolveBlocks: z.boolean().default(true).describe('Resolve block references'),
-    resolveDepth: z.number().min(1).max(5).default(3).describe('Depth for resolving references')
+    includeSchema: z.boolean().optional().describe('Include content type schema'),
+    includeVersions: z.boolean().optional().describe('Include version history'),
+    includeLanguages: z.boolean().optional().describe('Include all language versions'),
+    resolveBlocks: z.boolean().optional().describe('Resolve block references'),
+    resolveDepth: z.number().min(1).max(5).optional().describe('Depth for resolving references')
   });
 
   private discoveryCache: DiscoveryCache | null = null;
@@ -51,6 +51,13 @@ Example: retrieve({"identifier": "12345", "includeSchema": true})`;
   }
 
   protected async run(input: RetrieveInput, context: ToolContext): Promise<RetrieveOutput> {
+    input.locale = input.locale ?? 'en';
+    input.includeSchema = input.includeSchema ?? false;
+    input.includeVersions = input.includeVersions ?? false;
+    input.includeLanguages = input.includeLanguages ?? false;
+    input.resolveBlocks = input.resolveBlocks ?? true;
+    input.resolveDepth = input.resolveDepth ?? 3;
+
     if (!this.discoveryCache) {
       await this.initialize(context);
     }
@@ -320,13 +327,13 @@ Example: retrieve({"identifier": "12345", "includeSchema": true})`;
 // Type definitions
 interface RetrieveInput {
   identifier: string;
-  locale: string;
+  locale?: string;
   version?: string;
-  includeSchema: boolean;
-  includeVersions: boolean;
-  includeLanguages: boolean;
-  resolveBlocks: boolean;
-  resolveDepth: number;
+  includeSchema?: boolean;
+  includeVersions?: boolean;
+  includeLanguages?: boolean;
+  resolveBlocks?: boolean;
+  resolveDepth?: number;
 }
 
 interface RetrieveOutput {

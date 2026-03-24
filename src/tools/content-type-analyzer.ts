@@ -12,8 +12,8 @@ import { z } from 'zod';
 
 const AnalyzeTypeSchema = z.object({
   contentType: z.string().min(1).describe('The content type to analyze'),
-  includeExamples: z.boolean().optional().default(true).describe('Include example values for fields'),
-  includeInherited: z.boolean().optional().default(true).describe('Include inherited properties from base types')
+  includeExamples: z.boolean().optional().describe('Include example values for fields'),
+  includeInherited: z.boolean().optional().describe('Include inherited properties from base types')
 });
 
 export const contentTypeAnalyzerTool: ToolDefinition = {
@@ -24,6 +24,8 @@ export const contentTypeAnalyzerTool: ToolDefinition = {
     const config = context as Config;
     const logger = getLogger();
     const validated = AnalyzeTypeSchema.parse(params);
+    validated.includeExamples = validated.includeExamples ?? true;
+    validated.includeInherited = validated.includeInherited ?? true;
     
     try {
       // Get adapter

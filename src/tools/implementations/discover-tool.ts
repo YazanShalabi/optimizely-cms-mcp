@@ -13,9 +13,9 @@ import type { ContentTypeInfo, FieldInfo, SchemaInfo } from '../../types/discove
 const discoverSchema = z.object({
   target: z.enum(['types', 'fields', 'schema', 'all']).describe('What to discover'),
   contentType: z.string().optional().describe('Content type name (required for fields/schema targets)'),
-  includeMetadata: z.boolean().optional().default(true).describe('Include metadata information'),
-  includeExamples: z.boolean().optional().default(false).describe('Include example values'),
-  useCache: z.boolean().optional().default(true).describe('Use cached data if available')
+  includeMetadata: z.boolean().optional().describe('Include metadata information'),
+  includeExamples: z.boolean().optional().describe('Include example values'),
+  useCache: z.boolean().optional().describe('Use cached data if available')
 });
 
 type DiscoverInput = z.infer<typeof discoverSchema>;
@@ -65,6 +65,9 @@ Examples:
   
   protected async run(input: DiscoverInput, context: ToolContext): Promise<DiscoverOutput> {
     const { config } = context;
+    input.includeMetadata = input.includeMetadata ?? true;
+    input.includeExamples = input.includeExamples ?? false;
+    input.useCache = input.useCache ?? true;
     const startTime = Date.now();
     
     // Initialize services if needed

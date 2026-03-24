@@ -35,17 +35,17 @@ This tool automatically builds optimal GraphQL queries based on discovered schem
   protected readonly inputSchema = z.object({
     query: z.string().optional().describe('Search query text'),
     contentTypes: z.array(z.string()).optional().describe('Filter by content type names'),
-    filters: z.record(z.any()).optional().describe('Field-specific filters'),
-    locale: z.string().default('en').describe('Content locale'),
-    limit: z.number().min(1).max(100).default(20).describe('Maximum results to return'),
-    offset: z.number().min(0).default(0).describe('Pagination offset'),
+    filters: z.record(z.unknown()).optional().describe('Field-specific filters'),
+    locale: z.string().optional().describe('Content locale'),
+    limit: z.number().min(1).max(100).optional().describe('Maximum results to return'),
+    offset: z.number().min(0).optional().describe('Pagination offset'),
     orderBy: z.object({
       field: z.string(),
-      direction: z.enum(['ASC', 'DESC']).default('DESC')
+      direction: z.enum(['ASC', 'DESC']).optional()
     }).optional().describe('Sort order'),
-    includeFacets: z.boolean().default(false).describe('Include search facets/aggregations'),
-    includeTotal: z.boolean().default(true).describe('Include total count'),
-    searchMode: z.enum(['content', 'metadata', 'all']).default('all').describe('Search scope')
+    includeFacets: z.boolean().optional().describe('Include search facets/aggregations'),
+    includeTotal: z.boolean().optional().describe('Include total count'),
+    searchMode: z.enum(['content', 'metadata', 'all']).optional().describe('Search scope')
   });
 
   private introspector: SchemaIntrospector | null = null;
@@ -73,6 +73,16 @@ This tool automatically builds optimal GraphQL queries based on discovered schem
   }
 
   protected async run(input: SearchInput, context: ToolContext): Promise<SearchOutput> {
+    input.locale = input.locale ?? 'en';
+    input.limit = input.limit ?? 20;
+    input.offset = input.offset ?? 0;
+    input.includeFacets = input.includeFacets ?? false;
+    input.includeTotal = input.includeTotal ?? true;
+    input.searchMode = input.searchMode ?? 'all';
+    if (input.orderBy) {
+      input.orderBy.direction = input.orderBy.direction ?? 'DESC';
+    }
+
     if (!this.introspector || !this.discoveryCache) {
       await this.initialize(context);
     }
@@ -504,16 +514,16 @@ interface SearchInput {
   query?: string;
   contentTypes?: string[];
   filters?: Record<string, any>;
-  locale: string;
-  limit: number;
-  offset: number;
+  locale?: string;
+  limit?: number;
+  offset?: number;
   orderBy?: {
     field: string;
-    direction: 'ASC' | 'DESC';
+    direction?: 'ASC' | 'DESC';
   };
-  includeFacets: boolean;
-  includeTotal: boolean;
-  searchMode: 'content' | 'metadata' | 'all';
+  includeFacets?: boolean;
+  includeTotal?: boolean;
+  searchMode?: 'content' | 'metadata' | 'all';
 }
 
 interface SearchOutput {

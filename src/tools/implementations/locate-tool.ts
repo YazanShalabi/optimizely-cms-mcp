@@ -32,15 +32,21 @@ The tool will return detailed metadata about the found content.`;
   
   protected readonly inputSchema = z.object({
     identifier: z.string().describe('Content ID, key, or URL path'),
-    identifierType: z.enum(['auto', 'id', 'key', 'path']).default('auto').describe('Type of identifier'),
-    locale: z.string().default('en').describe('Content locale'),
+    identifierType: z.enum(['auto', 'id', 'key', 'path']).optional().describe('Type of identifier'),
+    locale: z.string().optional().describe('Content locale'),
     version: z.string().optional().describe('Specific version to retrieve'),
-    includeChildren: z.boolean().default(false).describe('Include child content'),
-    includeAncestors: z.boolean().default(false).describe('Include ancestor content'),
-    depth: z.number().min(0).max(5).default(1).describe('Depth for children/ancestors')
+    includeChildren: z.boolean().optional().describe('Include child content'),
+    includeAncestors: z.boolean().optional().describe('Include ancestor content'),
+    depth: z.number().min(0).max(5).optional().describe('Depth for children/ancestors')
   });
 
   protected async run(input: LocateInput, context: ToolContext): Promise<LocateOutput> {
+    input.identifierType = input.identifierType ?? 'auto';
+    input.locale = input.locale ?? 'en';
+    input.includeChildren = input.includeChildren ?? false;
+    input.includeAncestors = input.includeAncestors ?? false;
+    input.depth = input.depth ?? 1;
+
     // Validate and normalize the identifier
     const { type: actualType, normalizedId } = this.detectIdentifierType(input.identifier, input.identifierType);
 
@@ -306,12 +312,12 @@ The tool will return detailed metadata about the found content.`;
 // Type definitions
 interface LocateInput {
   identifier: string;
-  identifierType: 'auto' | 'id' | 'key' | 'guid' | 'path';
-  locale: string;
+  identifierType?: 'auto' | 'id' | 'key' | 'guid' | 'path';
+  locale?: string;
   version?: string;
-  includeChildren: boolean;
-  includeAncestors: boolean;
-  depth: number;
+  includeChildren?: boolean;
+  includeAncestors?: boolean;
+  depth?: number;
 }
 
 interface LocateOutput {

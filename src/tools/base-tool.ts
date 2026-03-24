@@ -189,8 +189,14 @@ export abstract class BaseTool<TInput = any, TOutput = any> {
       };
     }
     
+    if (def.typeName === 'ZodAny' || def.typeName === 'ZodUnknown') {
+      const result: any = {};
+      if (def.description) result.description = def.description;
+      return result;
+    }
+    
     // Default fallback
-    return { type: 'any' };
+    return {};
   }
   
   /**

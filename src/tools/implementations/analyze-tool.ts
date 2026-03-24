@@ -9,10 +9,10 @@ import { ValidationError } from '../../utils/errors.js';
 // Input schema for the analyze tool
 const analyzeSchema = z.object({
   contentType: z.string().min(1).describe('The content type to analyze'),
-  includeExamples: z.boolean().optional().default(true).describe('Include example values for fields'),
-  includeInherited: z.boolean().optional().default(true).describe('Include inherited properties from base types'),
-  includeValidation: z.boolean().optional().default(true).describe('Include validation rules'),
-  generateDefaults: z.boolean().optional().default(true).describe('Generate smart default values')
+  includeExamples: z.boolean().optional().describe('Include example values for fields'),
+  includeInherited: z.boolean().optional().describe('Include inherited properties from base types'),
+  includeValidation: z.boolean().optional().describe('Include validation rules'),
+  generateDefaults: z.boolean().optional().describe('Generate smart default values')
 });
 
 type AnalyzeInput = z.infer<typeof analyzeSchema>;
@@ -67,6 +67,10 @@ export class AnalyzeTool extends BaseTool<AnalyzeInput, ContentTypeAnalysis> {
   
   protected async run(input: AnalyzeInput, context: ToolContext): Promise<ContentTypeAnalysis> {
     const { config } = context;
+    input.includeExamples = input.includeExamples ?? true;
+    input.includeInherited = input.includeInherited ?? true;
+    input.includeValidation = input.includeValidation ?? true;
+    input.generateDefaults = input.generateDefaults ?? true;
     
     this.reportProgress(`Analyzing content type: ${input.contentType}`, 0);
     
